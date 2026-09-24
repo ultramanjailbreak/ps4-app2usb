@@ -1,65 +1,71 @@
-document.getElementById('sendBtn').addEventListener('click', async () => {
-    const ip = document.getElementById('ip').value.trim();
-    const message = document.getElementById('message').value.trim();
-    const statusDiv = document.getElementById('status');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS4 Notification Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 { text-align: center; margin-bottom: 20px; color: #003791; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #003791;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #004bc4; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-    if (!ip || !message) {
-        statusDiv.style.color = '#ff3333';
-        statusDiv.innerText = 'Please fill out all fields.';
-        return;
-    }
+<div class="container">
+    <h2>PS4 Notify Sender</h2>
+    <div class="form-group">
+        <label for="ip">PS4 IP Address:</label>
+        <input type="text" id="ip" placeholder="e.g., 192.168.1.15" value="192.168.1.">
+    </div>
+    <div class="form-group">
+        <label for="message">Notification Text:</label>
+        <input type="text" id="message" placeholder="Enter your text here...">
+    </div>
+    <button id="sendBtn">Send Notification</button>
+    <div id="status"></div>
+</div>
 
-    statusDiv.style.color = '#ffcc00';
-    statusDiv.innerText = 'Connecting to PS4...';
-
-    // Using ps4debug-NG custom TCP port 744 via WebSocket
-    const wsUrl = `ws://${ip}:744`; 
-
-    try {
-        const socket = new WebSocket(wsUrl);
-        socket.binaryType = 'arraybuffer';
-
-        socket.onopen = () => {
-            statusDiv.innerText = 'Sending notification...';
-            
-            // CMD_CONSOLE_NOTIFY API Call Hex
-            const CMD_NOTIFY = 0xBFDE0043;
-            
-            // Encode the string text to bytes (null-terminated)
-            const encoder = new TextEncoder();
-            const messageBytes = encoder.encode(message + '\0');
-            
-            // Binary Packet length: Header (12 bytes) + Text Data
-            const payloadLength = 12 + messageBytes.length; 
-            const buffer = new ArrayBuffer(payloadLength);
-            const view = new DataView(buffer);
-            
-            // Write payload layout structure
-            view.setUint32(0, CMD_NOTIFY, true);          // Command code
-            view.setUint32(4, 0, true);                   // Notification type (0 = standard)
-            view.setUint32(8, messageBytes.length, true); // Payload text byte size
-            
-            // Inject message stream behind the header mapping
-            const uint8View = new Uint8Array(buffer, 12);
-            uint8View.set(messageBytes);
-            
-            // Transmit packet over the network link
-            socket.send(buffer);
-            
-            statusDiv.style.color = '#33cc33';
-            statusDiv.innerText = 'Notification sent successfully!';
-            
-            setTimeout(() => socket.close(), 1000);
-        };
-
-        socket.onerror = (error) => {
-            console.error(error);
-            statusDiv.style.color = '#ff3333';
-            statusDiv.innerText = 'Connection failed! Confirm IP and verify ps4debug-NG is active on Port 744.';
-        };
-
-    } catch (err) {
-        statusDiv.style.color = '#ff3333';
-        statusDiv.innerText = 'Error sending packet data.';
-    }
-});
+<script src="app.js"></script>
+</body>
+</html>
