@@ -1,24 +1,16 @@
-#include "ps4.h"
+#include <ps4.h>
 
-// Custom Notification Function
-void send_notification(const char* text) {
-    // 0 = Default system information icon
-    // You can also use other standard integer icons depending on intent
-    sceSysUtilSendSystemNotificationWithText(0, text);
-}
-
-// Main execution entry point for the PS4 Bin Loader
 int _main(struct thread *td) {
-    // Initialize libPS4 internal system structures
+    // Resolve standard kernel pointers and symbols
     initKernel();
     initLibc();
-    initSysUtil();
-
-    // Elevate privileges to run kernel-level execution hooks
+    
+    // Elevate process environment boundaries out of sandbox limits
     jailbreak();
 
-    // Trigger the notification display banner
-    send_notification("Hello from your custom compiled .bin payload!");
+    // Trigger internal OS notification wrapper mapping
+    // '0' indicates the standard informational message icon block
+    sceSysUtilSendSystemNotificationWithText(0, "Notification compiled via custom GCC parameters successfully!");
 
     return 0;
 }
