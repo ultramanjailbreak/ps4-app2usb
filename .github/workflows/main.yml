@@ -1,0 +1,39 @@
+name: Build and Release PS4 Payload
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers compile automation when pushing a tag like v1.0, v1.0.1, etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grants GitHub permission to publish the compiled .bin to Releases
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Compile via Legacy GCC PS4 SDK Container
+      run: |
+        # Using a compatible legacy GCC SDK base container tag
+        docker run --rm -v "${{ github.workspace }}:/src" ghcr.io/scene-collective/ps4-payload-sdk:legacy-gcc make
+
+    - name: Get Target Binary Name
+      id: get_name
+      run: |
+        # Target variable capture matched directly to your Makefile structure logic
+        BIN_NAME=$(basename "${{ github.workspace }}").bin
+        echo "filename=$BIN_NAME" >> $GITHUB_OUTPUT
+
+    - name: Create Production GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ${{ steps.get_name.outputs.filename }}
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
