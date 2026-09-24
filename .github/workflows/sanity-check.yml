@@ -1,42 +1,39 @@
----
-name: "Sanity Check"
+name: Build and Release PS4 Payload
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'v*' # Triggers compile automation when pushing a tag like v1.0, v1.0.1, etc.
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grants GitHub permission to publish the compiled .bin to Releases
+
     steps:
-      -
-        name: "Checkout"
-        uses: actions/checkout@v2
-      -
-        name: "Setup Environment"
-        run: |
-          git clone https://github.com/Scene-Collective/ps4-payload-sdk ~/ps4-payload-sdk && cd "$_"
-          chmod +x install.sh
-          sudo ./install.sh
-      -
-        name: "Build Payload"
-        run: |
-          export PS4SDK=/opt/ps4sdk
-          make
-      -
-        name: "Upload Binary Artifact"
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./*.bin
-          if-no-files-found: error
-      -
-        name: "Upload Map Artifact"
-        uses: actions/upload-artifact@v2
-        with:
-          path: ./*.map
-          if-no-files-found: error
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Compile via Legacy GCC PS4 SDK Container
+      run: |
+        # Using a compatible legacy GCC SDK base container tag
+        docker run --rm -v "${{ github.workspace }}:/src" ghcr.io/scene-collective/ps4-payload-sdk:legacy-gcc make
+
+    - name: Get Target Binary Name
+      id: get_name
+      run: |
+        # Target variable capture matched directly to your Makefile structure logic
+        BIN_NAME=$(basename "${{ github.workspace }}").bin
+        echo "filename=$BIN_NAME" >> $GITHUB_OUTPUT
+
+    - name: Create Production GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ${{ steps.get_name.outputs.filename }}
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
