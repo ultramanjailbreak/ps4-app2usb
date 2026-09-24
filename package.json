@@ -1,0 +1,13 @@
+{
+  "name": "ps4-notify-sender",
+  "version": "1.0.0",
+  "description": "Send native pop-up notifications to a jailbroken PS4 over port 744.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^30.0.0"
+  }
+}
